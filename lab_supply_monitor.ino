@@ -1,29 +1,48 @@
 /*
  * Voltage and current monitor for lab supply
- *
- * Vset to A0
- * Vmeas to A1
- * Iset to A2
- * Imeas to A3
- *
+ * Connects to 20x4 character LCD
+ * Very simple. It just loops every 50ms (plus processing/measurement time)
+ *   performs 4 measurments (current + voltage measure + set) and updates the display.
  * 
- * Rs = 7
- * Enable = 8
- * D4 = 9
- * D5 = 10
- * D6 = 11
- * D7 = 12
- * RW to gnd
+ * Current and voltage measurements must be calibrated
+ * This should be a simple multiplicative adjustment which can be 
+ *   calibrated with a single measurement
+ * Set CALIBRATE below == 1 and measure a voltage/current at ~mid-scale
+ * Measure the voltage and current with a multimeter and divide by the values displayed on the LCD
+ * These are the multiplcative factors V_CAL_FACTOR and I_CAL_FACTOR
  *
+ *
+ * Analog voltage signal inputs
+ * Vset to A5
+ * Vmeas to A7
+ * Iset to A6
+ * Imeas to A4
+ * 
+ * LCD connections
+ * [LCD_pin = Arduino_pin]
+ * Rs = D7
+ * Enable = D8
+ * D4 = D9
+ * D5 = D10
+ * D6 = D11
+ * D7 = D12
+ * RW to gnd
  *
 */
 
 #include <LiquidCrystal.h>
 
-int Vset = A7;
-int Iset = A6;
-int Vmeas = A5;
-int Imeas = A4;
+//set CALIBRATE == 1 to move into calibration mode.
+//This will display the raw voltage measured on each pin
+#define CALIBRATE 1
+//Calibration multiplicative factors for current and voltage
+#define V_CAL_FACTOR 5.64
+#define I_CAL_FACTOR 0.2
+
+byte Vset = A5;
+byte Iset = A6;
+byte Vmeas = A7;
+byte Imeas = A4;
 
 //               (RS, EN, D4, D5, D6, D7)
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
@@ -39,20 +58,25 @@ void setup() {
   pinMode(Vmeas, INPUT);  
   pinMode(Iset, INPUT);  
   pinMode(Imeas, INPUT);  
-  analogReference(DEFAULT);
+  analogReference(DEFAULT); //use the 5V power rail as refernce
 }
 
 
 void loop() {
-  //meaure values
-  float set_voltage = 5.64*5.0/1024.0*analogRead(Vset);
-  //float set_voltage = 5.0/1024.0*analogRead(Vset);
-  float meas_voltage = 5.64*5.0/1024.0*analogRead(Vmeas);
-  //float meas_voltage = 5.0/1024.0*analogRead(Vmeas);
-  //float set_current = analogRead(Iset)*(5.0/1024.0)/(0.004*0.2*2200.0);
+
+  #if CALIBRATE
+  //display raw voltage
+  float set_voltage = 5.0/1024.0*analogRead(Vset);
+  float meas_voltage = 5.0/1024.0*analogRead(Vmeas);
   float set_current = analogRead(Iset)*(5.0/1024.0);
-  //float meas_current = analogRead(Imeas)*(5.0/1024.0)/(0.004*0.2*2200.0); 
   float meas_current = analogRead(Imeas)*(5.0/1024.0);
+  #else
+  //measure actual current/voltages (with calibration factors)
+  float set_voltage = V_CAL_FACTOR*5.0/1024.0*analogRead(Vset);
+  float meas_voltage = V_CAL_FACTOR*5.0/1024.0*analogRead(Vmeas);
+  float set_current = I_CAL_FACTOR*analogRead(Iset)*(5.0/1024.0)
+  float meas_current = I_CAL_FACTOR*analogRead(Imeas)*(5.0/1024.0)
+  #endif
 
   //update the lcd
   lcd.clear();
