@@ -34,10 +34,12 @@
 
 //set CALIBRATE == 1 to move into calibration mode.
 //This will display the raw voltage measured on each pin
-#define CALIBRATE 1
+#define CALIBRATE 0
 //Calibration multiplicative factors for current and voltage
-#define V_CAL_FACTOR 5.64
-#define I_CAL_FACTOR 0.2
+//Varduino = 2.60V, Vmeas = 14.40V -> 
+//Iarduino = 0.30, Imeas = 161.4mA
+#define V_CAL_FACTOR (14.4/2.6)
+#define I_CAL_FACTOR (0.1614/0.30)
 
 byte Vset = A5;
 byte Iset = A6;
@@ -74,8 +76,8 @@ void loop() {
   //measure actual current/voltages (with calibration factors)
   float set_voltage = V_CAL_FACTOR*5.0/1024.0*analogRead(Vset);
   float meas_voltage = V_CAL_FACTOR*5.0/1024.0*analogRead(Vmeas);
-  float set_current = I_CAL_FACTOR*analogRead(Iset)*(5.0/1024.0)
-  float meas_current = I_CAL_FACTOR*analogRead(Imeas)*(5.0/1024.0)
+  float set_current = I_CAL_FACTOR*analogRead(Iset)*(5.0/1024.0);
+  float meas_current = I_CAL_FACTOR*analogRead(Imeas)*(5.0/1024.0);
   #endif
 
   //update the lcd
